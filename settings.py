@@ -100,6 +100,9 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = 31536000
 
-CSRF_TRUSTED_ORIGINS = [
-    os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
-]
+csrf_origins = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
+if csrf_origins:
+    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_origins.split(',') if origin.strip()]
+else:
+    # Fallback für lokale Entwicklung, falls keine Variable gesetzt ist
+    CSRF_TRUSTED_ORIGINS = ['http://localhost', 'http://127.0.0.1']
