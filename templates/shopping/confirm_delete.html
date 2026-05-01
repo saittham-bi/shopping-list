@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Löschen – {{ einkauf.artikel }}{% endblock %}
+{% block content %}
+<div class="confirm-box">
+  <div class="confirm-icon">🗑️</div>
+  <div class="confirm-title">Artikel löschen?</div>
+  <p class="confirm-text">„<strong>{{ einkauf.artikel }}</strong>" wird unwiderruflich gelöscht.</p>
+  <div class="confirm-actions">
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger">Löschen</button>
+    </form>
+    <a href="{% url 'liste' %}" class="btn btn-ghost">Abbrechen</a>
+  </div>
+</div>
+{% endblock %}

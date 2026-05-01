@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Bearbeiten – {{ einkauf.artikel }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">✏️ Bearbeiten</h1>
+</div>
+<div class="card form-page">
+  <form method="post" class="form-stack">
+    {% csrf_token %}
+    <div class="form-row">
+      <label class="form-label">Artikel</label>
+      {{ form.artikel }}
+    </div>
+    <div class="form-row">
+      <label class="form-label">Laden</label>
+      {{ form.laden }}
+    </div>
+    <div class="form-check-row">
+      {{ form.gekauft }}
+      <label class="form-label" style="margin:0;cursor:pointer;text-transform:none;letter-spacing:0;font-size:.9rem;color:var(--text2)">Bereits gekauft</label>
+    </div>
+    <p style="font-size:.73rem;color:var(--text3)">Zuletzt geändert: {{ einkauf.geaendert|date:"d.m.Y H:i" }}</p>
+    <div style="display:flex;gap:.65rem;margin-top:.25rem">
+      <button type="submit" class="btn btn-primary">Speichern</button>
+      <a href="{% url 'liste' %}" class="btn btn-ghost">Abbrechen</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

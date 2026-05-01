@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Einkaufsliste – Gekauft{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1 class="page-title">✅ Gekaufte Artikel</h1>
+  {% if gekauft_count %}
+  <span class="page-badge" style="background:var(--green-lt);color:#15803d">{{ gekauft_count }} erledigt</span>
+  {% endif %}
+</div>
+
+{% if einkäufe %}
+  {% for einkauf in einkäufe %}
+  <div class="item bought">
+    <form method="post" action="{% url 'toggle_gekauft' einkauf.pk %}" style="display:contents">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="/gekauft/">
+      <button type="submit" class="item-check checked" title="Wieder öffnen">
+        <svg width="11" height="9" viewBox="0 0 10 8" fill="none">
+          <path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </form>
+    <span class="item-name">{{ einkauf.artikel }}</span>
+    <span class="item-meta">
+      {% if einkauf.laden %}{{ einkauf.laden.name }} · {% endif %}{{ einkauf.geaendert|date:"d.m. H:i" }}
+    </span>
+    <div class="item-actions">
+      <a href="{% url 'einkauf_delete' einkauf.pk %}" class="btn-icon danger" title="Löschen">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+          <path d="M10 11v6M14 11v6"/>
+          <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+  {% endfor %}
+
+  <div class="actions-row">
+    <form method="post" action="{% url 'alle_als_offen' %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-ghost btn-sm"
+        onclick="return confirm('Alle wieder als offen markieren?')">↩ Alle wieder öffnen</button>
+    </form>
+    <form method="post" action="{% url 'gekaufte_loeschen' %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger btn-sm"
+        onclick="return confirm('Alle gekauften Artikel löschen?')">🗑 Alle löschen</button>
+    </form>
+  </div>
+
+{% else %}
+  <div class="empty">
+    <div class="empty-icon">🛒</div>
+    <div class="empty-title">Noch nichts gekauft</div>
+    <p style="font-size:.875rem">Artikel als gekauft markieren, damit sie hier erscheinen.</p>
+    <a href="{% url 'liste' %}" class="btn btn-primary" style="margin-top:1.25rem">Zur Liste</a>
+  </div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,42 @@
+[
+  {
+    "model": "shopping.laden",
+    "pk": 1,
+    "fields": {
+      "name": "Migros",
+      "reihenfolge": 10
+    }
+  },
+  {
+    "model": "shopping.laden",
+    "pk": 2,
+    "fields": {
+      "name": "Coop",
+      "reihenfolge": 20
+    }
+  },
+  {
+    "model": "shopping.laden",
+    "pk": 3,
+    "fields": {
+      "name": "Aldi",
+      "reihenfolge": 30
+    }
+  },
+  {
+    "model": "shopping.laden",
+    "pk": 4,
+    "fields": {
+      "name": "Lidl",
+      "reihenfolge": 40
+    }
+  },
+  {
+    "model": "shopping.laden",
+    "pk": 5,
+    "fields": {
+      "name": "Denner",
+      "reihenfolge": 50
+    }
+  }
+]
