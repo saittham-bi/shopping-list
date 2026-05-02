@@ -107,16 +107,40 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     let draggedElement = null;
+    let touchStartY = 0;
+    let touchItem = null;
+
+    function updateOrder(container) {
+        const newOrder = Array.from(container.querySelectorAll('.item')).map(item => parseInt(item.dataset.id));
+        fetch('{% url "update_order" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({order: newOrder})
+        });
+    }
+
+    function clearIndicators() {
+        document.querySelectorAll('.item').forEach(item => {
+            item.style.borderTop = '';
+            item.style.borderBottom = '';
+        });
+    }
 
     document.querySelectorAll('.item').forEach(item => {
+        // Desktop Drag & Drop
         item.addEventListener('dragstart', function(e) {
             draggedElement = this;
             this.style.opacity = '0.5';
+            e.dataTransfer.effectAllowed = 'move';
         });
 
         item.addEventListener('dragend', function(e) {
             this.style.opacity = '1';
             draggedElement = null;
+            clearIndicators();
         });
 
         item.addEventListener('dragover', function(e) {
@@ -124,32 +148,27 @@ document.addEventListener('DOMContentLoaded', function() {
             if (this !== draggedElement) {
                 const rect = this.getBoundingClientRect();
                 const midpoint = rect.top + rect.height / 2;
+                clearIndicators();
                 if (e.clientY < midpoint) {
                     this.style.borderTop = '2px solid var(--primary)';
-                    this.style.borderBottom = '';
                 } else {
                     this.style.borderBottom = '2px solid var(--primary)';
-                    this.style.borderTop = '';
                 }
             }
         });
 
         item.addEventListener('dragleave', function(e) {
-            this.style.borderTop = '';
-            this.style.borderBottom = '';
+            if (e.target === this) {
+                clearIndicators();
+            }
         });
 
         item.addEventListener('drop', function(e) {
             e.preventDefault();
-            this.style.borderTop = '';
-            this.style.borderBottom = '';
+            clearIndicators();
 
             if (this !== draggedElement) {
                 const container = this.parentElement;
-                const items = Array.from(container.querySelectorAll('.item'));
-                const draggedIndex = items.indexOf(draggedElement);
-                const targetIndex = items.indexOf(this);
-
                 const rect = this.getBoundingClientRect();
                 const midpoint = rect.top + rect.height / 2;
                 const insertBefore = e.clientY < midpoint;
@@ -159,18 +178,81 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     container.insertBefore(draggedElement, this.nextSibling);
                 }
-
-                // Update order
-                const newOrder = Array.from(container.querySelectorAll('.item')).map(item => parseInt(item.dataset.id));
-                fetch('{% url "update_order" %}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                    },
-                    body: JSON.stringify({order: newOrder})
-                });
+                updateOrder(container);
             }
+        });
+
+        // Mobile Touch Events
+        item.addEventListener('touchstart', function(e) {
+            touchItem = this;
+            touchStartY = e.touches[0].clientY;
+            this.style.opacity = '0.5';
+            this.style.cursor = 'grabbing';
+        });
+
+        item.addEventListener('touchmove', function(e) {
+            if (!touchItem) return;
+            e.preventDefault();
+            
+            const touchY = e.touches[0].clientY;
+            const container = touchItem.parentElement;
+            const allItems = Array.from(container.querySelectorAll('.item'));
+            
+            // Find the item under the touch point
+            for (let targetItem of allItems) {
+                if (targetItem === touchItem) continue;
+                
+                const rect = targetItem.getBoundingClientRect();
+                if (touchY >= rect.top && touchY <= rect.bottom) {
+                    clearIndicators();
+                    const midpoint = rect.top + rect.height / 2;
+                    if (touchY < midpoint) {
+                        targetItem.style.borderTop = '3px solid var(--primary)';
+                    } else {
+                        targetItem.style.borderBottom = '3px solid var(--primary)';
+                    }
+                    break;
+                }
+            }
+        });
+
+        item.addEventListener('touchend', function(e) {
+            if (!touchItem) return;
+            
+            const touchY = e.changedTouches[0].clientY;
+            const container = touchItem.parentElement;
+            const allItems = Array.from(container.querySelectorAll('.item'));
+            
+            clearIndicators();
+            
+            // Find the target item and reorder
+            for (let targetItem of allItems) {
+                if (targetItem === touchItem) continue;
+                
+                const rect = targetItem.getBoundingClientRect();
+                if (touchY >= rect.top && touchY <= rect.bottom) {
+                    const midpoint = rect.top + rect.height / 2;
+                    const insertBefore = touchY < midpoint;
+                    
+                    if (insertBefore) {
+                        container.insertBefore(touchItem, targetItem);
+                    } else {
+                        container.insertBefore(touchItem, targetItem.nextSibling);
+                    }
+                    updateOrder(container);
+                    break;
+                }
+            }
+            
+            touchItem.style.opacity = '1';
+            touchItem.style.cursor = 'grab';
+            touchItem = null;
+        });
+
+        // Visual feedback for touch capability
+        item.style.cursor = 'grab';
+        item.addEventListener('touchstart', function() {
+            this.style.cursor = 'grabbing';
         });
     });
 });
