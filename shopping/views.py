@@ -1,7 +1,7 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Count
+from django.db.models import Count, Max
 from django.utils import timezone
 from itertools import groupby
 
@@ -17,7 +17,7 @@ def liste(request):
         Einkauf.objects
         .filter(gekauft=False)
         .select_related('laden')
-        .order_by('laden__reihenfolge', 'laden__name', 'artikel')
+        .order_by('laden__reihenfolge', 'laden__name', 'reihenfolge')
     )
 
     # Gruppierung nach Laden
@@ -42,6 +42,13 @@ def liste(request):
         if form.is_valid():
             einkauf = form.save(commit=False)
             einkauf.erstellt_von = request.user
+            # Set reihenfolge to next available
+            laden = einkauf.laden
+            if laden:
+                max_reihenfolge = Einkauf.objects.filter(laden=laden, gekauft=False).aggregate(Max('reihenfolge'))['reihenfolge__max'] or 0
+            else:
+                max_reihenfolge = Einkauf.objects.filter(laden__isnull=True, gekauft=False).aggregate(Max('reihenfolge'))['reihenfolge__max'] or 0
+            einkauf.reihenfolge = max_reihenfolge + 1
             einkauf.save()
             messages.success(request, f'„{einkauf.artikel}" wurde hinzugefügt.')
             return redirect('liste')
@@ -129,3 +136,16 @@ def gekaufte_loeschen(request):
         count, _ = Einkauf.objects.filter(gekauft=True).delete()
         messages.success(request, f'{count} gekaufte Artikel gelöscht.')
     return redirect('liste')
+
+
+@login_required
+def update_order(request):
+    """Update the order of shopping items via AJAX."""
+    if request.method == 'POST':
+        import json
+        data = json.loads(request.body)
+        order = data.get('order', [])
+        for i, pk in enumerate(order):
+            Einkauf.objects.filter(pk=pk).update(reihenfolge=i)
+        return JsonResponse({'status': 'ok'})
+    return JsonResponse({'status': 'error'}, status=400)

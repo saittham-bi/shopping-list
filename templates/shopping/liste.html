@@ -2,6 +2,8 @@
 {% block title %}Einkaufsliste – Offen{% endblock %}
 {% block content %}
 
+{% csrf_token %}
+
 <div class="page-header">
   <h1 class="page-title">🛒 Einkaufsliste</h1>
   {% if offene_count %}
@@ -60,7 +62,7 @@
     </div>
 
     {% for einkauf in items %}
-    <div class="item">
+    <div class="item" draggable="true" data-id="{{ einkauf.pk }}">
       <form method="post" action="{% url 'toggle_gekauft' einkauf.pk %}" style="display:contents">
         {% csrf_token %}
         <input type="hidden" name="next" value="/">
@@ -101,5 +103,77 @@
     <p style="font-size:.875rem">Keine offenen Einkäufe. Super gemacht.</p>
   </div>
 {% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let draggedElement = null;
+
+    document.querySelectorAll('.item').forEach(item => {
+        item.addEventListener('dragstart', function(e) {
+            draggedElement = this;
+            this.style.opacity = '0.5';
+        });
+
+        item.addEventListener('dragend', function(e) {
+            this.style.opacity = '1';
+            draggedElement = null;
+        });
+
+        item.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            if (this !== draggedElement) {
+                const rect = this.getBoundingClientRect();
+                const midpoint = rect.top + rect.height / 2;
+                if (e.clientY < midpoint) {
+                    this.style.borderTop = '2px solid var(--primary)';
+                    this.style.borderBottom = '';
+                } else {
+                    this.style.borderBottom = '2px solid var(--primary)';
+                    this.style.borderTop = '';
+                }
+            }
+        });
+
+        item.addEventListener('dragleave', function(e) {
+            this.style.borderTop = '';
+            this.style.borderBottom = '';
+        });
+
+        item.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.style.borderTop = '';
+            this.style.borderBottom = '';
+
+            if (this !== draggedElement) {
+                const container = this.parentElement;
+                const items = Array.from(container.querySelectorAll('.item'));
+                const draggedIndex = items.indexOf(draggedElement);
+                const targetIndex = items.indexOf(this);
+
+                const rect = this.getBoundingClientRect();
+                const midpoint = rect.top + rect.height / 2;
+                const insertBefore = e.clientY < midpoint;
+
+                if (insertBefore) {
+                    container.insertBefore(draggedElement, this);
+                } else {
+                    container.insertBefore(draggedElement, this.nextSibling);
+                }
+
+                // Update order
+                const newOrder = Array.from(container.querySelectorAll('.item')).map(item => parseInt(item.dataset.id));
+                fetch('{% url "update_order" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({order: newOrder})
+                });
+            }
+        });
+    });
+});
+</script>
 
 {% endblock %}

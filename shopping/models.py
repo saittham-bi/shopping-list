@@ -26,6 +26,7 @@ class Einkauf(models.Model):
         verbose_name='Laden',
         related_name='einkäufe'
     )
+    reihenfolge = models.PositiveIntegerField(default=0, verbose_name='Reihenfolge')
     geaendert = models.DateTimeField(auto_now=True, verbose_name='Geändert')
     erstellt = models.DateTimeField(auto_now_add=True, verbose_name='Erstellt')
     erstellt_von = models.ForeignKey(
@@ -40,7 +41,7 @@ class Einkauf(models.Model):
     class Meta:
         verbose_name = 'Einkauf'
         verbose_name_plural = 'Einkäufe'
-        ordering = ['laden__reihenfolge', 'laden__name', 'artikel']
+        ordering = ['reihenfolge']
 
     def __str__(self):
         return self.artikel
