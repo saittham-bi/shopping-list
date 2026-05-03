@@ -24,14 +24,14 @@ def liste(request):
     # Gruppierung nach Laden
     gruppen = {}
     for einkauf in offene:
-        laden_name = einkauf.laden.name if einkauf.laden else 'Egal'
+        laden_name = einkauf.laden.name if einkauf.laden else 'Egal wo'
         if laden_name not in gruppen:
             gruppen[laden_name] = []
         gruppen[laden_name].append(einkauf)
 
-    # Sort: 'Egal' kommt zuoberst
+    # Sort: 'Egal wo' kommt zuoberst
     def sort_key(item):
-        if item[0] == 'Egal':
+        if item[0] == 'Egal wo':
             return (0, '')
         return (1, item[0])
 

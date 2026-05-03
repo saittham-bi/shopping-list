@@ -23,7 +23,7 @@ class EinkaufForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['laden'].empty_label = 'Egal'
+        self.fields['laden'].empty_label = 'Egal wo'
         self.fields['laden'].required = False
 
 
@@ -39,5 +39,5 @@ class EinkaufEditForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['laden'].empty_label = 'Egal'
+        self.fields['laden'].empty_label = 'Egal wo'
         self.fields['laden'].required = False

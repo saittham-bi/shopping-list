@@ -54,7 +54,7 @@
   {% with forloop.counter as idx %}
   <div class="store-group">
     <div class="store-label">
-      <span class="store-pill {% if laden_name == 'Egal' %}sc-egal{% else %}sc-{{ idx }}{% endif %}">
+      <span class="store-pill {% if laden_name == 'Egal wo' %}sc-egal{% else %}sc-{{ idx }}{% endif %}">
         {{ laden_name }}
       </span>
       <span class="store-count">{{ items|length }}</span>
@@ -109,6 +109,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let draggedElement = null;
     let touchStartY = 0;
     let touchItem = null;
+    let longPressTimer = null;
+    let isDragging = false;
 
     function updateOrder(container) {
         const newOrder = Array.from(container.querySelectorAll('.item')).map(item => parseInt(item.dataset.id));
@@ -127,6 +129,25 @@ document.addEventListener('DOMContentLoaded', function() {
             item.style.borderTop = '';
             item.style.borderBottom = '';
         });
+    }
+
+    function startDrag(item) {
+        touchItem = item;
+        isDragging = true;
+        item.style.opacity = '0.5';
+        item.style.cursor = 'grabbing';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function endDrag() {
+        if (touchItem) {
+            touchItem.style.opacity = '1';
+            touchItem.style.cursor = 'grab';
+            document.body.style.overflow = '';
+        }
+        touchItem = null;
+        isDragging = false;
+        clearIndicators();
     }
 
     document.querySelectorAll('.item').forEach(item => {
@@ -182,78 +203,87 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Mobile Touch Events
+        // Mobile Touch Events with Long Press
         item.addEventListener('touchstart', function(e) {
-            touchItem = this;
+            if (isDragging) return;
+            
             touchStartY = e.touches[0].clientY;
-            this.style.opacity = '0.5';
-            this.style.cursor = 'grabbing';
+            longPressTimer = setTimeout(() => {
+                startDrag(this);
+            }, 500);
         });
 
         item.addEventListener('touchmove', function(e) {
-            if (!touchItem) return;
-            e.preventDefault();
+            if (longPressTimer) {
+                const touchY = e.touches[0].clientY;
+                if (Math.abs(touchY - touchStartY) > 10) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            }
             
-            const touchY = e.touches[0].clientY;
-            const container = touchItem.parentElement;
-            const allItems = Array.from(container.querySelectorAll('.item'));
-            
-            // Find the item under the touch point
-            for (let targetItem of allItems) {
-                if (targetItem === touchItem) continue;
+            if (isDragging && touchItem) {
+                e.preventDefault();
                 
-                const rect = targetItem.getBoundingClientRect();
-                if (touchY >= rect.top && touchY <= rect.bottom) {
-                    clearIndicators();
-                    const midpoint = rect.top + rect.height / 2;
-                    if (touchY < midpoint) {
-                        targetItem.style.borderTop = '3px solid var(--primary)';
-                    } else {
-                        targetItem.style.borderBottom = '3px solid var(--primary)';
+                const touchY = e.touches[0].clientY;
+                const container = touchItem.parentElement;
+                const allItems = Array.from(container.querySelectorAll('.item'));
+                
+                for (let targetItem of allItems) {
+                    if (targetItem === touchItem) continue;
+                    
+                    const rect = targetItem.getBoundingClientRect();
+                    if (touchY >= rect.top && touchY <= rect.bottom) {
+                        clearIndicators();
+                        const midpoint = rect.top + rect.height / 2;
+                        if (touchY < midpoint) {
+                            targetItem.style.borderTop = '3px solid var(--primary)';
+                        } else {
+                            targetItem.style.borderBottom = '3px solid var(--primary)';
+                        }
+                        break;
                     }
-                    break;
                 }
             }
         });
 
         item.addEventListener('touchend', function(e) {
-            if (!touchItem) return;
-            
-            const touchY = e.changedTouches[0].clientY;
-            const container = touchItem.parentElement;
-            const allItems = Array.from(container.querySelectorAll('.item'));
-            
-            clearIndicators();
-            
-            // Find the target item and reorder
-            for (let targetItem of allItems) {
-                if (targetItem === touchItem) continue;
-                
-                const rect = targetItem.getBoundingClientRect();
-                if (touchY >= rect.top && touchY <= rect.bottom) {
-                    const midpoint = rect.top + rect.height / 2;
-                    const insertBefore = touchY < midpoint;
-                    
-                    if (insertBefore) {
-                        container.insertBefore(touchItem, targetItem);
-                    } else {
-                        container.insertBefore(touchItem, targetItem.nextSibling);
-                    }
-                    updateOrder(container);
-                    break;
-                }
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
             }
             
-            touchItem.style.opacity = '1';
-            touchItem.style.cursor = 'grab';
-            touchItem = null;
+            if (isDragging && touchItem) {
+                const touchY = e.changedTouches[0].clientY;
+                const container = touchItem.parentElement;
+                const allItems = Array.from(container.querySelectorAll('.item'));
+                
+                clearIndicators();
+                
+                for (let targetItem of allItems) {
+                    if (targetItem === touchItem) continue;
+                    
+                    const rect = targetItem.getBoundingClientRect();
+                    if (touchY >= rect.top && touchY <= rect.bottom) {
+                        const midpoint = rect.top + rect.height / 2;
+                        const insertBefore = touchY < midpoint;
+                        
+                        if (insertBefore) {
+                            container.insertBefore(touchItem, targetItem);
+                        } else {
+                            container.insertBefore(touchItem, targetItem.nextSibling);
+                        }
+                        updateOrder(container);
+                        break;
+                    }
+                }
+                
+                endDrag();
+            }
         });
 
         // Visual feedback for touch capability
         item.style.cursor = 'grab';
-        item.addEventListener('touchstart', function() {
-            this.style.cursor = 'grabbing';
-        });
     });
 });
 </script>
